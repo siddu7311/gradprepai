@@ -1,0 +1,270 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock, User, Sparkles, ArrowLeft } from 'lucide-react';
+import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
+import { GlowButton } from '@/components/ui/GlowButton';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { Helmet } from 'react-helmet-async';
+import { supabase } from '@/integrations/supabase/client';
+import GoogleIcon from '@/components/ui/GoogleIcon';
+
+export default function SignUp() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    const redirectUrl = `${window.location.origin}/verify-email`;
+    const { error, data } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: { display_name: formData.name },
+      },
+    });
+    
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('already registered')) {
+        toast({
+          title: "Account already exists",
+          description: "This email is already registered. Please sign in, or use 'Forgot password?' to set a password if you previously used Google sign-in.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        navigate('/signin');
+        return;
+      }
+
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if email confirmation is required
+    if (data.user && !data.session) {
+      // Email confirmation is required
+      toast({
+        title: "Check your email",
+        description: "We've sent you a verification link to confirm your account.",
+      });
+      setIsLoading(false);
+      sessionStorage.setItem('gradprep-pending-email', formData.email.trim().toLowerCase());
+      navigate('/verify-email', { state: { email: formData.email.trim().toLowerCase() } });
+      return;
+    }
+    
+    toast({
+      title: "Account created!",
+      description: "Welcome to GradPrep AI. Let's get you started.",
+    });
+    
+    setIsLoading(false);
+    navigate('/dashboard');
+  };
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    const redirectUrl = `${window.location.origin}/dashboard`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+      },
+    });
+    
+    if (error) {
+      toast({
+        title: "Google sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsGoogleLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>Sign Up - GradPrep AI</title>
+        <meta name="description" content="Create your GradPrep AI account and start practicing for your tech interviews." />
+      </Helmet>
+
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <AnimatedBackground />
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md"
+        >
+          {/* Back Button */}
+          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4" />
+            Back to home
+          </Link>
+
+          <GlassCard hover={false} className="p-8">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <Link to="/" className="inline-flex items-center gap-2 mb-6">
+                <Sparkles className="w-8 h-8 text-primary" />
+                <span className="font-display text-xl font-bold gradient-text">GradPrep AI</span>
+              </Link>
+              <h1 className="font-display text-2xl font-bold text-foreground mb-2">
+                Create your account
+              </h1>
+              <p className="text-muted-foreground">
+                Start your interview preparation journey
+              </p>
+            </div>
+
+            {/* Google Sign Up */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleGoogleSignUp}
+              disabled={isGoogleLoading}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl glass border border-glass-border/30 hover:border-primary/30 transition-colors mb-6"
+            >
+              {isGoogleLoading ? (
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full"
+                />
+              ) : (
+                <GoogleIcon className="w-5 h-5" />
+              )}
+              <span className="text-foreground font-medium">
+                {isGoogleLoading ? 'Connecting...' : 'Continue with Google'}
+              </span>
+            </motion.button>
+
+            <div className="relative mb-6">
+              <Separator className="bg-border" />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-4 text-sm text-muted-foreground">
+                or
+              </span>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-foreground">Full Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Amd Siddu"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="pl-10 bg-muted/50 border-glass-border/50 focus:border-primary/50"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-foreground">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="amdsiddu@gmail.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="pl-10 bg-muted/50 border-glass-border/50 focus:border-primary/50"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="pl-10 pr-10 bg-muted/50 border-glass-border/50 focus:border-primary/50"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <GlowButton
+                type="submit"
+                className="w-full mt-6"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full"
+                    />
+                    Creating account...
+                  </span>
+                ) : (
+                  'Create Account'
+                )}
+              </GlowButton>
+            </form>
+
+            {/* Footer */}
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Already have an account?{' '}
+              <Link to="/signin" className="text-primary hover:underline font-medium">
+                Sign in
+              </Link>
+            </p>
+          </GlassCard>
+
+          {/* Terms */}
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            By signing up, you agree to our{' '}
+            <a href="#" className="hover:underline">Terms of Service</a>
+            {' '}and{' '}
+            <a href="#" className="hover:underline">Privacy Policy</a>
+          </p>
+        </motion.div>
+      </div>
+    </>
+  );
+}

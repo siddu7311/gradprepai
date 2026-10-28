@@ -1,0 +1,50 @@
+project_id = "uejhcakkxhbifsjhhfvy"
+
+[functions.generate-interview-questions]
+verify_jwt = false
+
+[functions.analyze-interview-response]
+verify_jwt = false
+
+[functions.interview-stt]
+verify_jwt = false
+
+[functions.interview-tts]
+verify_jwt = false
+
+[functions.lusy-chat]
+verify_jwt = false
+
+[functions.analyze-resume]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.submit-upi-payment]
+verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.voice-tts]
+verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
+
+[functions.create-razorpay-order]
+verify_jwt = false
+
+[functions.verify-razorpay-payment]
+verify_jwt = false
+
+[functions.razorpay-webhook]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.send-weekly-report]
+verify_jwt = false
+
